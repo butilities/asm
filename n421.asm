@@ -1,4 +1,4 @@
-; Turenko Aexander. 4.21(a, b).
+; Turenko Alexander. 4.21(a, b).
 INCLUDE IO\io.asm
 
 STACK SEGMENT STACK
