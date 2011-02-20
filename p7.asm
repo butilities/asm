@@ -52,9 +52,9 @@ KO:	MOV ES:[BX].RIGHT, BX
 	RET
 INIT_HEAP ENDP
 
-; DX - adress of data
+; DX - address of data
 ; ----- OUTPUT -----
-; AX - adress new item
+; AX - address new item
 NEW PROC
 	PUSH BX
 	PUSH SI
@@ -87,8 +87,8 @@ EPT:	LEA DX, ERR_MESS
 	FINISH
 NEW ENDP
 
-; SI - adress of node
-; DX - adress of begin word
+; SI - address of node
+; DX - address of begin word
 ; ----- OUTPUT -----
 ; AL:	-1 - to left
 ;	 0 - equals
@@ -126,10 +126,10 @@ CWQ:	POP BX
 	RET
 CMPWORDD ENDP
 
-; BX - adress of root tree
-; DX - adress of begin word
+; BX - address of root tree
+; DX - address of begin word
 ; ----- OUTPUT -----
-; SI - adress of need node
+; SI - address of need node
 ; AL:	-1 - to left
 ;	 0 - equals
 ;	 1 - to right
@@ -166,8 +166,8 @@ SNTO_R:	CMP ES:[SI].RIGHT, 0
 SNEX:	RET
 SEARCH_NODE ENDP
 
-; BX - adress of root tree
-; DX - adress of begin word
+; BX - address of root tree
+; DX - address of begin word
 INS2TREE PROC
 	PUSH AX
 	PUSH SI
@@ -192,7 +192,7 @@ INS_Q:	POP SI
 	RET
 INS2TREE ENDP
 
-; DX - adress of begin word
+; DX - address of begin word
 ; AL - last symbol
 READWORDD PROC
 	PUSH BX
@@ -220,7 +220,7 @@ RWE:	POP CX
 	RET
 READWORDD ENDP
 
-; BX - adress of begin word
+; BX - address of begin word
 OUTWORDD PROC
 	PUSH BX
 	PUSH CX
@@ -233,7 +233,7 @@ OWL:	OUTCH ES:[BX]
 	RET
 OUTWORDD ENDP
 
-; BX - adress of begin node
+; BX - address of begin node
 OUTNODE PROC
 	CALL OUTWORDD
 	OUTCH ':'
