@@ -1,0 +1,458 @@
+; Alexander Turenko. 2.5.2.
+INCLUDE IO\io.asm
+INCLUDE IO\moreio.asm
+
+DEBUG EQU 0
+MAX_WORDS EQU 20
+MAX_SYM_IN_WORD EQU 8
+
+NODE STRUC
+	ELEM DB MAX_SYM_IN_WORD DUP (?)
+	POSITIONS_1 DW 0
+	POSITIONS_2 DW 0
+	NEXT DW 0
+NODE ENDS
+
+HEAP SEGMENT
+	HEAP_PTR DW ?
+	DB (MAX_WORDS * (TYPE NODE)) DUP (?)
+HEAP ENDS
+
+STACK SEGMENT STACK
+	DB 256 DUP (?)
+STACK ENDS
+
+DATA SEGMENT
+	BUFFER DB MAX_SYM_IN_WORD DUP (?)
+	LISTS DW MAX_SYM_IN_WORD DUP (0)
+	ERR_MESS DB '*ERROR*$'
+DATA ENDS
+
+CODE SEGMENT
+	ASSUME SS:STACK, DS:DATA, CS:CODE
+
+INIT_HEAP PROC
+	PUSH BX
+	PUSH CX
+
+	MOV CX, HEAP
+	MOV ES, CX
+
+	MOV ES:HEAP_PTR, 2
+
+	MOV CX, MAX_WORDS-1
+	MOV BX, 2
+
+KO:	MOV ES:[BX].NEXT, BX
+	ADD ES:[BX].NEXT, TYPE NODE
+	ADD BX, TYPE NODE
+	LOOP KO
+
+	MOV ES:[BX].NEXT, 0
+
+	POP CX
+	POP BX
+	RET
+INIT_HEAP ENDP
+
+; DX - address of data
+; ----- OUTPUT -----
+; AX - address new item
+NEW PROC
+	PUSH BX
+	PUSH SI
+
+	MOV BX, ES:HEAP_PTR
+	CMP BX, 0
+	JE EPT; empty heap
+
+	MOV SI, DX
+	MOV AX, BX
+
+	PUSH ES:[BX].NEXT
+	POP ES:HEAP_PTR
+
+	IRPC SM, 0246
+		PUSH WORD PTR [SI + SM]
+		POP WORD PTR ES:[BX + SM].ELEM
+	ENDM
+
+	MOV ES:[BX].POSITIONS_1, 0
+	MOV ES:[BX].POSITIONS_2, 0
+	MOV ES:[BX].NEXT, 0
+
+	POP SI
+	POP BX
+	RET
+
+EPT:	LEA DX, ERR_MESS
+	OUTSTR
+	FINISH
+NEW ENDP
+
+; ES:[SI] - address of node with first word
+; DS:[DX] - address of second word
+; ----- OUTPUT -----
+; AL:	-1 - first < second
+;	 0 - equal
+;	 1 - first > second
+CMPWORDD PROC
+	PUSH SI
+	PUSH BX
+	PUSH CX
+	PUSH AX
+
+	MOV BX, DX
+	MOV CX, MAX_SYM_IN_WORD
+
+CWL:	MOV AL, [BX]
+	CMP AL, ES:[SI].ELEM
+	JB BELOW
+	JA ABOVE
+	INC SI
+	INC BX
+	LOOP CWL
+
+	MOV AL, 0
+	JMP CWQ
+
+BELOW:	MOV AL, -1
+	JMP CWQ
+ABOVE:	MOV AL, 1
+	JMP CWQ
+
+
+CWQ:	POP BX
+	MOV AH, BH
+	POP CX
+	POP BX
+	POP SI
+	RET
+CMPWORDD ENDP
+
+; ES:[SI] - list head
+; DS:[DX] - searched word
+; ----- OUTPUT -----
+; ES:[SI] - new node
+SEARCH_NODE PROC
+	PUSH AX
+	PUSH BX
+
+; ----- begin of cycle -----
+SEARCH_LOOP:
+	MOV BX, SI
+	MOV SI, ES:[BX].NEXT; ES:[BX] - current node, ES:[SI] - next node
+
+	CMP SI, 0; ES:[SI] is not exist?
+	JE PUT_AFTER_CURRENT
+
+	CALL CMPWORDD; Compare ES:[SI] and DS:[DX]
+	CMP AL, 0
+	JL PUT_AFTER_CURRENT; DS:[DX] > ES:[SI]
+	JG SEARCH_LOOP; DS:[DX] < ES:[SI]
+	JMP SEARCH_RET; DS:[DX] == ES:[SI]
+; ----- end of cycle -----
+
+PUT_AFTER_CURRENT:
+	CALL NEW
+	MOV ES:[BX].NEXT, AX; current.next = new_node
+	MOV BX, AX
+	MOV ES:[BX].NEXT, SI; new_node.next = next_node
+	MOV SI, AX
+
+SEARCH_RET:
+	POP BX
+	POP AX
+	RET
+SEARCH_NODE ENDP
+
+; DS:[DX] - word
+; DS:[SI] - address of list
+; BL - position of word (1-20)
+INS2LIST PROC
+	PUSH SI
+	PUSH AX
+	PUSH CX
+
+	CMP WORD PTR [SI], 0
+	JNE FOUND_LIST
+	CALL NEW; head node
+	MOV [SI], AX
+
+FOUND_LIST:
+	MOV SI, [SI]; ES:[SI] - head node
+	CALL SEARCH_NODE
+
+; Change positions in node
+	MOV AX, 1
+	MOV CL, 16
+	SUB CL, BL
+	CMP CL, 0
+	JL POS_2
+	SHL AX, CL
+	OR ES:[SI].POSITIONS_1, AX
+	JMP INS_RET
+POS_2:
+	ADD CL, 16
+	SHL AX, CL
+	OR ES:[SI].POSITIONS_2, AX
+
+INS_RET:
+	POP CX
+	POP AX
+	POP SI
+	RET
+INS2LIST ENDP
+
+; DX - address of begin word
+; ----- OUTPUT -----
+; AL - shift for needly list
+; AH - last readed symbol
+READWORDD PROC
+	PUSH BX
+	PUSH CX
+
+	MOV BX, DX
+	MOV CX, MAX_SYM_IN_WORD
+	MOV AL, 0
+
+RWL:	INCH AH
+	CMP AH, ','
+	JE ADD_SPACES
+	CMP AH, '.'
+	JE ADD_SPACES
+	MOV [BX], AH
+	INC BX
+	INC AL
+	LOOP RWL
+
+	INC AH; ',' or '.'
+	JMP RWE
+
+ADD_SPACES:
+	MOV BYTE PTR [BX], ' '
+	INC BX
+	LOOP ADD_SPACES
+
+RWE:	DEC AL
+	SHL AL, 1
+
+	POP CX
+	POP BX
+	RET
+READWORDD ENDP
+
+; BX - bitmap
+; CX - count of calc bits (from left)
+; ------ OUTPUT ------
+; AX - increased to count of 1
+BITMAP_TO_COUNT PROC
+	PUSH BX
+	PUSH CX
+
+BTC_LOOP:
+	SHL BX, 1
+	ADC AX, 0
+	LOOP BTC_LOOP
+
+	POP CX
+	POP BX
+	RET
+BITMAP_TO_COUNT ENDP
+
+; BX - bitmap
+; CX - count of calc bits (from left)
+; AL - first number
+; ----- OUTPUT ------
+; AL - increased to CX
+; AH - need print ", "?
+PRINT_POSITIONS PROC
+	PUSH BX
+	PUSH CX
+
+PP_LOOP:
+	SHL BX, 1
+	JNC PP_NEXT
+	CMP AH, 0
+	JE TO_OUTWORD
+	OUTCH ','
+	OUTCH ' '
+TO_OUTWORD:
+	PUSH AX
+	MOV AH, 0
+	OUTWORD AX
+	POP AX
+	MOV AH, 1
+PP_NEXT:
+	INC AL
+	LOOP PP_LOOP
+
+	POP CX
+	POP BX
+
+	RET
+PRINT_POSITIONS ENDP
+
+; ES:[SI] - node contain word
+OUTWORDD PROC
+	PUSH SI
+	PUSH CX
+
+	MOV CX, MAX_SYM_IN_WORD
+
+OUTWORDD_LOOP:
+	OUTCH ES:[SI].ELEM
+	INC SI
+	LOOP OUTWORDD_LOOP
+
+	POP CX
+	POP SI
+	RET
+OUTWORDD ENDP
+
+; ES:[SI] - node
+OUTNODE PROC
+	CALL OUTWORDD
+	OUTCH ':'
+	OUTCH ' '
+
+	IF DEBUG EQ 0
+; ----- print positions -----
+
+	PUSH BX
+	PUSH CX
+	PUSH AX
+
+	MOV AL, 1; first number
+	MOV AH, 0; not print ", "
+
+	MOV BX, ES:[SI].POSITIONS_1
+	MOV CX, 16
+	CALL PRINT_POSITIONS
+
+	MOV BX, ES:[SI].POSITIONS_2
+	MOV CX, 4
+	CALL PRINT_POSITIONS
+
+	POP AX
+	POP CX
+	POP BX
+
+; ----- end of print positions -----
+	ELSE
+; ----- debug -----
+
+	OUTCH '('
+	PUSH BX
+	MOV BX, ES:[SI].POSITIONS_1
+	PRINT_BITMAP 16
+	MOV BX, ES:[SI].POSITIONS_2
+	PRINT_BITMAP 4
+	POP BX
+	OUTCH ')'
+
+	OUTCH ' '
+	OUTCH '#'
+	OUTWORD SI, 4
+
+	OUTCH ' '
+	OUTCH 'N'
+	OUTCH '#'
+	OUTWORD ES:[SI].NEXT, 4
+
+; ----- end of debug -----
+	ENDIF
+
+	NEWLINE
+	RET
+OUTNODE ENDP
+
+; ES:[SI] - head list
+PRINT_LIST PROC
+	PUSH SI
+	PUSH BX
+	PUSH CX
+	PUSH AX
+
+	MOV SI, [SI]; BX - address of head list
+	CMP SI, 0
+	JE PRINT_LIST_RET
+
+PRINT_LIST_LOOP:
+	MOV SI, ES:[SI].NEXT; skip head node
+	CMP SI, 0
+	JE PRINT_LIST_RET
+
+	MOV AX, 0
+
+	MOV BX, ES:[SI].POSITIONS_1
+	MOV CX, 16
+	CALL BITMAP_TO_COUNT; CX - count
+
+	MOV BX, ES:[SI].POSITIONS_2
+	MOV CX, 4
+	CALL BITMAP_TO_COUNT
+
+	CMP AX, 1
+	JNA PRINT_LIST_LOOP
+	CALL OUTNODE
+	JMP PRINT_LIST_LOOP
+
+PRINT_LIST_RET:
+	POP AX
+	POP CX
+	POP BX
+	POP SI
+	RET
+PRINT_LIST ENDP
+
+PRINT_ALL_LISTS PROC
+	PUSH SI
+	PUSH CX
+
+	LEA SI, LISTS
+	MOV CX, MAX_SYM_IN_WORD
+PRINT_LOOP:
+	CALL PRINT_LIST
+	ADD SI, 2
+	LOOP PRINT_LOOP
+
+	POP CX
+	POP SI
+	RET
+PRINT_ALL_LISTS ENDP
+
+START:	MOV AX, DATA
+	MOV DS, AX
+
+	CALL INIT_HEAP
+	LEA DX, BUFFER
+
+	OUTCH '>'
+	OUTCH ' '
+
+	MOV CX, MAX_WORDS
+	MOV BH, 0
+	MOV BL, 1; position
+
+MAIN_LOOP:
+	CALL READWORDD
+
+	LEA SI, LISTS
+	PUSH AX
+	MOV AH, 0
+	ADD SI, AX
+	POP AX
+
+	CALL INS2LIST
+	CMP AH, '.'
+	JE TO_PRINT
+
+	INC BL
+	LOOP MAIN_LOOP
+
+TO_PRINT:
+	CALL PRINT_ALL_LISTS
+	FINISH
+CODE ENDS
+END START

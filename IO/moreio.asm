@@ -1,5 +1,5 @@
-; Turenko Alexander.
-; Last updates: 2010.05.11.
+; Alexander Turenko.
+; Last updates: 2011.02.22.
 
 ; Output string to symbol END_SYMBOL
 ; DS:DX - address of begin string
@@ -20,6 +20,30 @@ LOOPER:	MOV DL, [BX]
 	JMP LOOPER
 
 TOQUIT:	POP BX
+	POP AX
+	POP DX
+	ENDM
+
+; Output register BX as bitmap
+; BX - bitmap
+PRINT_BITMAP MACRO COUNT
+	LOCAL LOOPER
+	PUSH DX
+	PUSH AX
+	PUSH BX
+	PUSH CX
+
+	MOV AH, 2
+	MOV CX, COUNT
+
+LOOPER:	MOV DL, 0
+	SHL BX, 1
+	ADC DL, '0'
+	INT 21h
+	LOOP LOOPER
+
+	POP CX
+	POP BX
 	POP AX
 	POP DX
 	ENDM
