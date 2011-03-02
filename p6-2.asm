@@ -69,6 +69,9 @@ PR2 PROC
 	DEC SI     ; address of last symbol
 	SHR CX, 1  ; (count_symbols mod 2) iterations
 
+	CMP CX, 0
+	JE Q2V2
+
 L4:	; exchange [BX] with [SI]
 	MOV AL, [BX]
 	XCHG AL, [SI]
@@ -78,7 +81,7 @@ L4:	; exchange [BX] with [SI]
 	DEC SI
 	LOOP L4
 
-	POP AX
+Q2V2:	POP AX
 	POP SI
 	POP BX
 	POP CX
