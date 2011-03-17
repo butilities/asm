@@ -1,3 +1,4 @@
+; Alexander Turenko.
 INCLUDE IO\io.asm
 
 STACK SEGMENT STACK

@@ -1,4 +1,4 @@
-; Turenko Alexander. 3.24.
+; Alexander Turenko. 3.24.
 INCLUDE IO\io.asm
 
 STACK SEGMENT STACK

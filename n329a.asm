@@ -1,4 +1,4 @@
-; Turenko Alexander. 3.29(a).
+; Alexander Turenko. 3.29(a).
 INCLUDE IO\io.asm
 INCLUDE IO\moreio.asm
 
