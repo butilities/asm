@@ -1,0 +1,170 @@
+; Alexander Turenko. 7.22.
+INCLUDE IO\io.asm
+
+N EQU 5
+
+STACK SEGMENT STACK
+	DB 128 DUP (?)
+STACK ENDS
+
+DATA SEGMENT
+	X DW N DUP (?)
+	Y DW N DUP (?)
+	RESULT DB 'NOT EQUAL', '$'
+DATA ENDS
+
+
+CODE SEGMENT
+	ASSUME SS:STACK, CS:CODE, DS:DATA
+
+; ----- input -----
+; DS:BX - begin of array
+; ----- output -----
+; array to stdout
+OUTMASS PROC
+	PUSH CX
+	PUSH BX
+
+	OUTCH '<'
+	OUTCH ' '
+
+	MOV CX, N
+L2:	OUTINT [BX]
+	OUTCH ' '
+	ADD BX, 2
+	LOOP L2
+
+	NEWLINE
+
+	POP BX
+	POP CX
+	RET
+OUTMASS ENDP
+
+; ----- input -----
+; DS:BX - begin of array
+; ----- output -----
+; entered array
+INMASS PROC
+	PUSH CX
+	PUSH BX
+
+	OUTCH '>'
+	OUTCH ' '
+
+	MOV CX, N
+L1:	ININT [BX]
+	ADD BX, 2
+	LOOP L1
+
+	POP BX
+	POP CX
+	RET
+INMASS ENDP
+
+; ----- input -----
+; DS:BX - begin of array
+; ----- output -----
+; sorted array
+SORT PROC
+	PUSH DX
+	PUSH AX
+	PUSH SI
+	PUSH CX
+
+; ******
+SORT_EXTERNAL:
+	MOV AX, 0
+	MOV SI, 0
+	MOV CX, N-1
+; -----
+SORT_INTERNAL:
+	MOV DX, [BX][SI]
+	CMP DX, [BX][SI]+2
+	JNG CONTINUE
+	XCHG DX, [BX][SI]+2
+	MOV [BX][SI], DX
+	INC AX
+CONTINUE:
+	ADD SI, 2
+	LOOP SORT_INTERNAL
+; ------
+	CMP AX, 0
+	JNE SORT_EXTERNAL
+; ******
+
+	POP CX
+	POP SI
+	POP AX
+	POP DX
+	RET
+SORT ENDP
+
+; ----- input -----
+; DS:BX - begin of array 1
+; DS:SI - begin of array 2
+; ----- output -----
+; AL: 0, (array 1) == (array 2)
+; AL: 1, (array 1) != (array 2)
+EQUAL PROC
+	PUSH DX
+	PUSH CX
+	PUSH SI
+	PUSH BX
+
+	MOV AL, 0
+
+	MOV CX, N
+EQ_LOOP:
+	MOV DX, [BX]
+	CMP DX, [SI]
+	JNE NOT_EQUAL
+	ADD BX, 2
+	ADD SI, 2
+	LOOP EQ_LOOP
+
+TO_EQ_RET:
+	POP BX
+	POP SI
+	POP CX
+	POP DX
+	RET
+NOT_EQUAL:
+	MOV AL, 1
+	JMP TO_EQ_RET
+EQUAL ENDP
+
+START:	MOV AX, DATA
+	MOV DS, AX
+
+	MOV BX, OFFSET X
+	CALL INMASS
+;	CALL OUTMASS
+	MOV BX, OFFSET Y
+	CALL INMASS
+;	CALL OUTMASS
+
+	MOV BX, OFFSET X
+	CALL SORT
+;	CALL OUTMASS
+	MOV BX, OFFSET Y
+	CALL SORT
+;	CALL OUTMASS
+
+	MOV DX, OFFSET RESULT
+
+	MOV BX, OFFSET X
+	MOV SI, OFFSET Y
+	CALL EQUAL
+
+	CMP AL, 0
+	JNE TO_PRINT
+	ADD DX, 4
+TO_PRINT:
+	OUTCH '<'
+	OUTCH ' '
+	OUTSTR
+	NEWLINE
+	FINISH
+CODE ENDS
+END START
