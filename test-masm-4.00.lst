@@ -3,7 +3,7 @@
                                                             Page     1-1
                                                             
 
-                                ; Alexander Turenko. 3.24. 
+                                ; Alexander Turenko. 
                              C  INCLUDE IO\io.asm 
                              C   
                              C  ;.nolist    ;запрет записи этого файла в листин
