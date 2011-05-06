@@ -1,0 +1,404 @@
+Microsoft (R) Macro Assembler  Version 4.00                 5/7/11 03:11:51
+ 
+                                                            Page     1-1
+                                                            
+
+                                ; Alexander Turenko. 3.24. 
+                             C  INCLUDE IO\io.asm 
+                             C   
+                             C  ;.nolist    ;запрет записи этого файла в листин
+				г 
+                             C   
+                             C  ;   Файл с макросами ввода-вывода, подключаемый
+				 к 
+                             C  ;   программе по директиве:   include io.asm 
+                             C   
+                             C  ;**********************************************
+				************* 
+                             C  ;             ОКОНЧАНИЕ СЧЕТА ПРОГРАММЫ 
+                             C  ;**********************************************
+				************* 
+                             C   
+                             C  ;==============================================
+				======= 
+                             C  ; Окончание счета программы 
+                             C  ;   обращение:  finish 
+                             C  ;   на входе: al - код завершения (можно игнори
+				ровать) 
+                             C  ;----------------------------------------------
+				------- 
+                             C  finish macro 
+                             C          mov ah,4Ch 
+                             C          int 21h 
+                             C         endm 
+                             C   
+                             C  ;**********************************************
+				************** 
+                             C  ;             ВЫВОД НА ЭКРАН (в текстовом режим
+				е) 
+                             C  ;**********************************************
+				************** 
+                             C  ;Общие замечания: 
+                             C  ; Вывод на экран осуществляется немедленно, без
+				 использования 
+                             C  ;промежуточных буферов. Вывод начинается с пози
+				ции курсора. 
+                             C  ;----------------------------------------------
+				-------------- 
+                             C   
+                             C  ;========================== 
+                             C  ;  Переход на новую строку 
+                             C  ;    обращение:  newline 
+                             C  ;-------------------------- 
+                             C      extrn procnl:far 
+                             C  newline macro 
+                             C           call procnl 
+                             C          endm 
+                             C   
+                             C  ;============================== 
+                             C  ;  Вывод символа 
+Microsoft (R) Macro Assembler  Version 4.00                 5/7/11 03:11:51
+ 
+                                                            Page     1-2
+                                                            
+
+                             C  ;    обращение:  outch c 
+                             C  ;        где c - i8, r8 или m8 
+                             C  ;------------------------------ 
+                             C  outch macro c 
+                             C         push dx 
+                             C         push ax 
+                             C         mov dl,c 
+                             C         mov ah,2 
+                             C         int 21h 
+                             C         pop ax 
+                             C         pop dx 
+                             C        endm 
+                             C   
+                             C  ;==============================================
+				========== 
+                             C  ;  Вывод строки символов 
+                             C  ;    обращение:   outstr 
+                             C  ;    на входе:  ds:dx - начальный адрес строки 
+                             C  ;            (в конце строки д.б. символ $, код
+				 36 (24h)) 
+                             C  ;----------------------------------------------
+				----------- 
+                             C  outstr macro 
+                             C          push ax 
+                             C          mov ah,9 
+                             C          int 21h 
+                             C          pop ax 
+                             C         endm 
+                             C   
+                             C  ;==============================================
+				=================== 
+                             C  ;  Вывод целого со знаком размером в слово 
+                             C  ;    обращение:   outint num [,leng] 
+                             C  ;     где num -  выводимое число: i16, r16, m16
+				 
+                             C  ;         leng - ширина поля вывода: i8, r8, m8
+				 (со значением >=0) 
+                             C  ; Особенности вывода: 
+                             C  ;   если поле больше, чем надо, то слева добавл
+				яются пробелы, 
+                             C  ;   если меньше - выводится только число (целик
+				ом); 
+                             C  ;   по умолчанию leng=0 
+                             C  ;----------------------------------------------
+				-------------------- 
+                             C      extrn procoutnum:far 
+                             C  outint macro  num,leng 
+                             C          outnum <num>,<leng>,1 
+                             C         endm 
+                             C   
+                             C  ;========================================== 
+                             C  ;  Вывод целого без знака размером в слово 
+                             C  ;   обращение:    outword num [,leng] 
+                             C  ;    num и leng - как в outint 
+Microsoft (R) Macro Assembler  Version 4.00                 5/7/11 03:11:51
+ 
+                                                            Page     1-3
+                                                            
+
+                             C  ;------------------------------------------ 
+                             C  outword macro num,leng 
+                             C           outnum <num>,<leng>,0 
+                             C          endm 
+                             C   
+                             C  ;----------------------------------------------
+				--- 
+                             C  ; Вспомогательный макрос проверки написания име
+				ни 
+                             C  ; разными (большими и малыми) буквами 
+                             C  ;----------------------------------------------
+				--- 
+                             C  same macro name,variants,ans 
+                             C         ans=0 
+                             C       irp v,<variants> 
+                             C        ifidn <name>,<v> 
+                             C         ans=1 
+                             C         exitm 
+                             C        endif 
+                             C       endm 
+                             C       endm 
+                             C   
+                             C  ;----------------------------------------------
+				------------ 
+                             C  ; Вспомогательный макрос для outint (sign=1) и 
+				outword (=0) 
+                             C  ;----------------------------------------------
+				------------ 
+                             C  outnum macro num,leng,sign 
+                             C         local regdx? 
+                             C           push ax 
+                             C           push dx 
+                             C         same <num>,<dx,DX,Dx,dX>,regdx? 
+                             C         if regdx?            ;;out dx,leng  --> 
+                             C          ifb <leng>          ;; mov al,leng 
+                             C           mov al,0           ;; xchg ax,dx 
+                             C          else 
+                             C           mov al,leng 
+                             C          endif 
+                             C           xchg ax,dx 
+                             C         else                 ;;out num,leng  (nu
+				m<>dx) --> 
+                             C          ifb <leng>          ;; mov dl,leng 
+                             C           mov dl,0           ;; mov ax,num 
+                             C          else 
+                             C           mov dl,leng 
+                             C          endif 
+                             C           mov ax,num 
+                             C         endif 
+                             C           mov dh,sign 
+                             C           call procoutnum   ;;ax=num, dl=leng, d
+				h=sign 
+                             C           pop dx 
+                             C           pop ax 
+Microsoft (R) Macro Assembler  Version 4.00                 5/7/11 03:11:51
+ 
+                                                            Page     1-4
+                                                            
+
+                             C         endm 
+                             C   
+                             C  ;**********************************************
+				************* 
+                             C  ;                  ВВОД С КЛАВИАТУРЫ 
+                             C  ;**********************************************
+				************* 
+                             C  ; Общие замечания: 
+                             C  ;   Операции ввода не выдают на экран приглашен
+				ие к вводу. 
+                             C  ;   Набранные на клавиатуре символы  заносятся 
+				в промежуточ- 
+                             C  ;ный буфер ввода,  откуда  они  затем считывают
+				ся операциями 
+                             C  ;ввода. В связи с этим допускается "досрочный" 
+				ввод информа- 
+                             C  ;ции: можно набрать данные до того, как их запр
+				осит програм- 
+                             C  ;ма.  Конец ввода - клавиша Enter (сама она не 
+				вводится опе- 
+                             C  ;рациями ввода),  при нажатии которой завершает
+				ся заполнение 
+                             C  ;буфера ввода  и  курсор  перемещается  на нача
+				ло  следующей 
+                             C  ;строки экрана.  Следующий ввод будет открыт  т
+				олько тогда, 
+                             C  ;когда из буфера будут считаны все символы. 
+                             C  ;  При вводе (до нажатия клавиши Enter) допуска
+				ется редакти- 
+                             C  ;рование набираемого текста с помощью следующих
+				 клавиш: 
+                             C  ;  <-, Backspace - отмена последнего набранного
+				 символа 
+                             C  ;  Esc           - отмена всего ранее набранног
+				о текста 
+                             C  ;----------------------------------------------
+				------------ 
+                             C   
+                             C  ;==================================== 
+                             C  ;  Очистка буфера ввода с клавиатуры 
+                             C  ;    обращение:  flush 
+                             C  ;------------------------------------ 
+                             C      extrn procflush:far 
+                             C  flush macro 
+                             C       call procflush 
+                             C        endm 
+                             C   
+                             C  ;==============================================
+				=========== 
+                             C  ;  Ввод символа (с пропуском концов строк, т.е.
+				 Enter) 
+                             C  ;   обращение:  inch x 
+                             C  ;      где x - r8, m8 
+                             C  ;   на выходе:  x - введенный символ 
+Microsoft (R) Macro Assembler  Version 4.00                 5/7/11 03:11:51
+ 
+                                                            Page     1-5
+                                                            
+
+                             C  ;----------------------------------------------
+				----------- 
+                             C      extrn procinch:far 
+                             C  inch macro x 
+                             C       local regax? 
+                             C       same <x>,<ah,AH,Ah,aH>,regax? 
+                             C       if regax? 
+                             C         xchg ah,al      ;;x=ah 
+                             C         mov al,0 
+                             C         call procinch 
+                             C         xchg ah,al 
+                             C       else 
+                             C        same <x>,<al,AL,Al,aL>,regax? 
+                             C        if regax? 
+                             C         mov al,0      ;;x=al 
+                             C         call procinch 
+                             C        else 
+                             C         push ax         ;;x - не ah и не al 
+                             C         mov al,0 
+                             C         call procinch 
+                             C         mov x,al 
+                             C         pop ax 
+                             C        endif 
+                             C       endif 
+                             C       endm 
+                             C   
+                             C  ;==============================================
+				=================== 
+                             C  ;  Ввод целого числа (со знаком и без) размером
+				 в слово 
+                             C  ;   обращение:  inint x 
+                             C  ;     где x - r16, m16 
+                             C  ;   на выходе: x - введенное число 
+                             C  ;   особенности ввода: 
+                             C  ;     пропускаются все пробелы и концы строк пе
+				ред числом; 
+                             C  ;     число должно начинаться с цифры, перед не
+				й возможен знак; 
+                             C  ;     при минусе число вводится как отрицательн
+				ое; 
+                             C  ;     ввод идет до первой нецифры (в т.ч. до En
+				ter), она глотается; 
+                             C  ;     при ошибке будет печать сообщения и остан
+				ов программы; 
+                             C  ;   ошибки:  "нет цифры" - в числе нет ни одной
+				 цифры 
+                             C  ;            "переполнение" - большое по модулю
+				 число 
+                             C  ;                             (вне отрезка [-32
+				768,+65535]) 
+                             C  ;----------------------------------------------
+				-------------------- 
+                             C      extrn procinint:far 
+                             C  inint macro x 
+Microsoft (R) Macro Assembler  Version 4.00                 5/7/11 03:11:51
+ 
+                                                            Page     1-6
+                                                            
+
+                             C        local regax? 
+                             C        same <x>,<ax,AX,Ax,aX>,regax? 
+                             C        if regax? 
+                             C         call procinint       ;;x=ax 
+                             C        else 
+                             C         push ax              ;;x<>ax 
+                             C         call procinint 
+                             C         mov x,ax 
+                             C         pop ax 
+                             C        endif 
+                             C        endm 
+                             C   
+                             C  ;==============================================
+				============= 
+                             C   
+                             C    ; восстановить запись в листинг: 
+                             C  ;.list 
+                                 
+                                 
+ 0000                           STACK SEGMENT STACK 
+ 0000  0080[                    	DB 128 DUP (?) 
+            ??                  
+                         ]      
+                                
+ 0080                           STACK ENDS 
+                                 
+ 0000                           CODE SEGMENT 
+                                	ASSUME SS:STACK, CS:CODE 
+ 0000                           START: 
+                                	IRP C, <K, LL, M> 
+                                		C EQU C&C&CC 
+                                		DB 'C&C&CC' 
+                                	ENDM 
+ =                            1 		K EQU KKCC
+test.ASM(14) : error 9: Symbol not defined KKCC
+ 0000  43 4B 43 43            1 		DB 'CKCC'
+ =                            1 		LL EQU LLLLCC
+test.ASM(14) : error 9: Symbol not defined LLLLCC
+ 0004  43 4C 4C 43 43         1 		DB 'CLLCC'
+ =                            1 		M EQU MMCC
+test.ASM(14) : error 9: Symbol not defined MMCC
+ 0009  43 4D 43 43            1 		DB 'CMCC'
+                                 
+                                	FINISH 
+ 000D  B4 4C                  1         mov ah,4Ch
+ 000F  CD 21                  1         int 21h
+ 0011                           CODE ENDS 
+                                END START 
+
+Microsoft (R) Macro Assembler  Version 4.00                 5/7/11 03:11:51
+ 
+                                                            Symbols-1
+                                                             
+
+Macros:
+
+		N a m e			Lines
+
+FINISH . . . . . . . . . . . . .  	   2
+FLUSH  . . . . . . . . . . . . .  	   1
+INCH . . . . . . . . . . . . . .  	  19
+ININT  . . . . . . . . . . . . .  	   9
+NEWLINE  . . . . . . . . . . . .  	   1
+OUTCH  . . . . . . . . . . . . .  	   7
+OUTINT . . . . . . . . . . . . .  	   1
+OUTNUM . . . . . . . . . . . . .  	  22
+OUTSTR . . . . . . . . . . . . .  	   4
+OUTWORD  . . . . . . . . . . . .  	   1
+SAME . . . . . . . . . . . . . .  	   7
+
+Segments and Groups:
+
+                N a m e         	Size	Align	Combine Class
+
+CODE . . . . . . . . . . . . . .  	0011	PARA	NONE	
+STACK  . . . . . . . . . . . . .  	0080	PARA	STACK	
+
+Symbols:            
+
+                N a m e         	Type	Value	Attr         
+
+K  . . . . . . . . . . . . . . .  	Alias			
+
+LL . . . . . . . . . . . . . . .  	Alias			
+
+M  . . . . . . . . . . . . . . .  	Alias			
+
+PROCFLUSH  . . . . . . . . . . .  	L FAR 	0000		External
+PROCINCH . . . . . . . . . . . .  	L FAR 	0000		External
+PROCININT  . . . . . . . . . . .  	L FAR 	0000		External
+PROCNL . . . . . . . . . . . . .  	L FAR 	0000		External
+PROCOUTNUM . . . . . . . . . . .  	L FAR 	0000		External
+
+START  . . . . . . . . . . . . .  	L NEAR	0000	CODE
+
+
+    242 Source  Lines
+    251 Total   Lines
+     43 Symbols
+
+  49416 Bytes symbol space free
+
+      0 Warning Errors
+      3 Severe  Errors
