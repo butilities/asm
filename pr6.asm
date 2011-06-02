@@ -1,0 +1,50 @@
+; Alexander Turenko.
+INCLUDE IO\io.asm
+
+STACK SEGMENT STACK
+	DB 128 DUP (?)
+STACK ENDS
+
+DATA SEGMENT
+	zero equ 0
+	cnt DW 8
+DATA ENDS
+
+CODE SEGMENT
+	ASSUME SS:STACK, DS:DATA, CS:CODE
+
+ASSGN PROC NEAR
+	PUSH BP
+	MOV BP, SP
+	PUSH AX
+	PUSH ES
+
+; On stack: ES_old, AX_old, BP_old, ret_adr, N, X_adr, X_seg...
+; Pointer BP -> BP_old
+	MOV ES, [BP+8]; ES == X_seg
+	MOV AX, [BP+4]; AX == N
+	MOV BP, [BP+6]; BP == X_adr
+	MOV ES:[BP], AX; X = N
+
+	POP ES
+	POP AX
+	POP BP
+	RET 6
+ASSGN ENDP
+
+START:
+	MOV AX, DATA
+	MOV DS, AX
+
+	MOV AX, SEG cnt
+	PUSH AX
+	MOV AX, offset cnt
+	PUSH AX
+	MOV AX, zero
+	PUSH AX
+	CALL ASSGN
+
+	OUTINT cnt
+	FINISH
+CODE ENDS
+END START

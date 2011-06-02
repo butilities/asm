@@ -1,0 +1,115 @@
+Microsoft (R) Macro Assembler  Version 4.00                 5/30/11 00:16:08
+
+                                                            Page     1-1
+                                                            
+
+                                ; Alexander Turenko. 
+                             C  INCLUDE IO\io.asm 
+                             C   
+                             C  .list 
+                                 
+                                 
+ = 0001                         A EQU 1 
+ = 0001                         B EQU 1, 2 
+test-equ.ASM(5) : error 1: Extra characters on line 
+ = 0001                         C = 1 
+ =                              D EQU C 
+ = 0002                         E EQU C+1 
+                                 
+ 0000                           STACK SEGMENT STACK 
+ 0000  0080[                    	DB 128 DUP (?) 
+            ??                  
+                         ]      
+                                
+ 0080                           STACK ENDS 
+                                 
+ 0000                           CODE SEGMENT 
+                                	ASSUME SS:STACK, CS:CODE 
+ 0000                           START: 
+ = 000A                         	C = 10 
+                                	OUTWORD D, 6 
+ 0000  50                     2          push ax
+ 0001  52                     2          push dx
+ 0002  B2 06                  2          mov dl,6
+ 0004  B8 000A                2          mov ax,D
+ 0007  B6 00                  2          mov dh,0
+ 0009  9A 0000 ---- E         2          call procoutnum
+ 000E  5A                     2          pop dx
+ 000F  58                     2          pop ax
+                                	OUTWORD E, 6 
+ 0010  50                     2          push ax
+ 0011  52                     2          push dx
+ 0012  B2 06                  2          mov dl,6
+ 0014  B8 0002                2          mov ax,E
+ 0017  B6 00                  2          mov dh,0
+ 0019  9A 0000 ---- E         2          call procoutnum
+ 001E  5A                     2          pop dx
+ 001F  58                     2          pop ax
+                                	FINISH 
+ 0020  B4 4C                  1         mov ah,4Ch
+ 0022  CD 21                  1         int 21h
+ 0024                           CODE ENDS 
+                                END START 
+
+Microsoft (R) Macro Assembler  Version 4.00                 5/30/11 00:16:08
+
+                                                            Symbols-1
+                                                             
+
+Macros:
+
+		N a m e			Lines
+
+FINISH . . . . . . . . . . . . .  	   2
+FLUSH  . . . . . . . . . . . . .  	   1
+INCH . . . . . . . . . . . . . .  	  19
+ININT  . . . . . . . . . . . . .  	   9
+NEWLINE  . . . . . . . . . . . .  	   1
+OUTCH  . . . . . . . . . . . . .  	   7
+OUTINT . . . . . . . . . . . . .  	   1
+OUTNUM . . . . . . . . . . . . .  	  22
+OUTSTR . . . . . . . . . . . . .  	   4
+OUTWORD  . . . . . . . . . . . .  	   1
+SAME . . . . . . . . . . . . . .  	   7
+
+Segments and Groups:
+
+                N a m e         	Size	Align	Combine Class
+
+CODE . . . . . . . . . . . . . .  	0024	PARA	NONE	
+STACK  . . . . . . . . . . . . .  	0080	PARA	STACK	
+
+Symbols:            
+
+                N a m e         	Type	Value	Attr         
+
+A  . . . . . . . . . . . . . . .  	Number	0001	
+
+B  . . . . . . . . . . . . . . .  	Number	0001	
+
+C  . . . . . . . . . . . . . . .  	Number	000A	
+
+D  . . . . . . . . . . . . . . .  	Alias	 C		
+
+E  . . . . . . . . . . . . . . .  	Number	0002	
+
+PROCFLUSH  . . . . . . . . . . .  	L FAR 	0000		External
+PROCINCH . . . . . . . . . . . .  	L FAR 	0000		External
+PROCININT  . . . . . . . . . . .  	L FAR 	0000		External
+PROCNL . . . . . . . . . . . . .  	L FAR 	0000		External
+PROCOUTNUM . . . . . . . . . . .  	L FAR 	0000		External
+
+START  . . . . . . . . . . . . .  	L NEAR	0000	CODE
+
+??0000 . . . . . . . . . . . . .  	Number	0000	
+??0001 . . . . . . . . . . . . .  	Number	0000	
+
+
+    246 Source  Lines
+    341 Total   Lines
+     47 Symbols
+
+  49398 Bytes symbol space free
+
+      1 Warning Errors
+      0 Severe  Errors

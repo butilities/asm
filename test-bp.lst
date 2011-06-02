@@ -1,0 +1,80 @@
+Microsoft (R) Macro Assembler  Version 4.00                 5/29/11 17:08:03
+
+                                                            Page     1-1
+                                                            
+
+                                ; Alexander Turenko. 
+                             C  INCLUDE IO\io.asm 
+                             C   
+                             C  .list 
+                                 
+                                 
+ 0000                           STACK SEGMENT STACK 
+ 0000  0080[                    	DB 128 DUP (?) 
+            ??                  
+                         ]      
+                                
+ 0080                           STACK ENDS 
+                                 
+ 0000                           CODE SEGMENT 
+                                	ASSUME SS:STACK, CS:CODE 
+ 0000                           START: 
+ 0000  8B 46 00                 	MOV AX, [BP] 
+ 0003  8B 5E 00                 	MOV BX, [BP] 
+ 0006  8B 04                    	MOV AX, [SI] 
+ 0008  8B 1C                    	MOV BX, [SI] 
+                                	FINISH 
+ 000A  B4 4C                  1         mov ah,4Ch
+ 000C  CD 21                  1         int 21h
+ 000E                           CODE ENDS 
+                                END START 
+
+Microsoft (R) Macro Assembler  Version 4.00                 5/29/11 17:08:03
+
+                                                            Symbols-1
+                                                             
+
+Macros:
+
+		N a m e			Lines
+
+FINISH . . . . . . . . . . . . .  	   2
+FLUSH  . . . . . . . . . . . . .  	   1
+INCH . . . . . . . . . . . . . .  	  19
+ININT  . . . . . . . . . . . . .  	   9
+NEWLINE  . . . . . . . . . . . .  	   1
+OUTCH  . . . . . . . . . . . . .  	   7
+OUTINT . . . . . . . . . . . . .  	   1
+OUTNUM . . . . . . . . . . . . .  	  22
+OUTSTR . . . . . . . . . . . . .  	   4
+OUTWORD  . . . . . . . . . . . .  	   1
+SAME . . . . . . . . . . . . . .  	   7
+
+Segments and Groups:
+
+                N a m e         	Size	Align	Combine Class
+
+CODE . . . . . . . . . . . . . .  	000E	PARA	NONE	
+STACK  . . . . . . . . . . . . .  	0080	PARA	STACK	
+
+Symbols:            
+
+                N a m e         	Type	Value	Attr         
+
+PROCFLUSH  . . . . . . . . . . .  	L FAR 	0000		External
+PROCINCH . . . . . . . . . . . .  	L FAR 	0000		External
+PROCININT  . . . . . . . . . . .  	L FAR 	0000		External
+PROCNL . . . . . . . . . . . . .  	L FAR 	0000		External
+PROCOUTNUM . . . . . . . . . . .  	L FAR 	0000		External
+
+START  . . . . . . . . . . . . .  	L NEAR	0000	CODE
+
+
+    241 Source  Lines
+    244 Total   Lines
+     40 Symbols
+
+  49344 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors
