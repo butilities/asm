@@ -50,8 +50,7 @@ outword ax
 
 ====
 
-MOV BP, SP
-CMP BP, 500
+CMP SP, 500
 JAE EMPTY_STACK
 
 ; ES:BX == 7ABCDh
@@ -60,7 +59,8 @@ MOV ES, BX
 MOV BX, 0Dh
 
 ; Чётные — нулевое, второе, … слова.
-; CX == (500-BP)/4
+; BP = SP; CX == (500-BP)/4
+MOV BP, SP
 MOV CX, BP
 NEG CX
 ADD CX, 500
