@@ -58,19 +58,19 @@ MOV BX, 7ABCh
 MOV ES, BX
 MOV BX, 0Dh
 
-; Чётные — нулевое, второе, … слова.
-; BP = SP; CX == (500-BP)/4
+; BP = SP; CX == (500-BP)/2
 MOV BP, SP
 MOV CX, BP
 NEG CX
 ADD CX, 500
 SHR CX, 1
-SHR CX, 1
 ; ---- sending ----
 L:	MOV AX, [BP]
+	TEST AX, 1b
+	JNZ L1
 	MOV ES:[BX], AX
-	ADD BP, 4
 	ADD BX, 2
+L1:	ADD BP, 2
 	LOOP L
 ; ---- end of sending ----
 
